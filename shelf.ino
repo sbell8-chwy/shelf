@@ -62,38 +62,59 @@ class NeoStrip : public Adafruit_NeoPixel {
 
     void breath() {
         currentPattern = BREATH;
-        totalSteps = (20 * colorSize) - 1;
-        interval = 500;
+        totalSteps = (200 * colorSize) - 1;
+        interval = 50;
         index = 0;
     }
 
     void breathUpdate() {
         uint16_t tempIndex = index;
         uint8_t colorIndex = 0;
-        while (tempIndex >= 20) {
+        while (tempIndex >= 200) {
             colorIndex++;
-            tempIndex = tempIndex - 20;
+            tempIndex = tempIndex - 200;
         }
-        if (tempIndex < 15) {
+        if (tempIndex < 150) {
             setAll(gamma32(colors[colorIndex]));
         } else {
             uint32_t cFrom = colors[colorIndex];
             uint32_t cTo;
-            if (colorIndex == colorSize) {
+            if (colorIndex == colorSize - 1) {
                 cTo = colors[0];
             } else {
                 cTo = colors[colorIndex + 1];
             }
-            setAll(gamma32(getTransitionColor(cFrom, cTo, tempIndex - 15, 5)));
+            setAll(gamma32(getTransitionColor(cFrom, cTo, tempIndex - 150, 50)));
         }
         show();
         increment();
     }
 
     void scanner() {
+        currentPattern = SCANNER;
+        totalSteps = (NUMPIXELS - 1) * 2 * colorSize;
+        interval = 50;
+        index = 0;
     }
 
     void scannerUpdate() {
+        int run = (NUMPIXELS - 1) * 2;
+        uint32_t color = colors[index / run];
+        int tempIndex = index;
+        while (tempIndex > run) {
+            tempIndex -= run;
+        }
+        for (int i = 0; i < NUMPIXELS; i++) {
+            if (i == tempIndex) {
+                setPixelColor(i, color);
+            } else if (i == run - tempIndex) {
+                setPixelColor(i, color);
+            } else {
+                setPixelColor(i, dimColor(getPixelColor(i)));
+            }
+        }
+        show();
+        increment();
     }
 
     uint32_t getTransitionColor(uint32_t from, uint32_t to, int step, int stepCount) {
@@ -113,6 +134,11 @@ class NeoStrip : public Adafruit_NeoPixel {
         temp += 5;
         temp = from - (temp / 10);
         return temp;
+    }
+
+    uint32_t dimColor(uint32_t color) {
+        uint32_t dimColor = Color(red(color) >> 1, green(color) >> 1, blue(color) >> 1);
+        return dimColor;
     }
 
     uint8_t red(uint32_t c) {
@@ -141,21 +167,35 @@ NeoStrip strip;
 
 void setup() {
     Serial.begin(9600);
+    pinMode(8, INPUT_PULLUP);
     strip.begin();
     strip.breath();
 }
 
+int lastButtonState = HIGH;
+
 void loop() {
     strip.update();
-  // for (int i = 0; i < NUMPIXELS; i++) {
-    // strip.setPixelColor(i, current_color);
-  // }
-  // strip.show();
-  // delay(5000);
-  // uint32_t old_color = current_color;
-  // color_index = (color_index + 1) % 3;
-  // current_color = colors[color_index];
-//  transition(old_color, current_color);
+    if (digitalRead(8) == LOW) {
+        if (lastButtonState == HIGH) {
+            lastButtonState = LOW;
+            switch (strip.currentPattern) {
+                case OFF:
+                    strip.breath();
+                    break;
+                case BREATH:
+                    strip.scanner();
+                    break;
+                case SCANNER:
+                    strip.off();
+                    break;
+                default:
+                    break;
+            }
+        }
+    } else {
+        lastButtonState = HIGH;
+    }
 }
 
 void breath() {
