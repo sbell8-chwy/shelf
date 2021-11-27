@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 
 #define PIN 6
-#define NUMPIXELS 71
+#define NUMPIXELS 67
 
 enum Pattern { BREATH, OFF, SCANNER };
 
