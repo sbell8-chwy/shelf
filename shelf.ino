@@ -92,25 +92,23 @@ class NeoStrip : public Adafruit_NeoPixel {
 
     void scanner() {
         currentPattern = SCANNER;
-        totalSteps = (NUMPIXELS - 1) * 2 * colorSize;
+        totalSteps = (NUMPIXELS - 1) * 2;
         interval = 50;
         index = 0;
     }
 
     void scannerUpdate() {
-        int run = (NUMPIXELS - 1) * 2;
-        uint32_t color = colors[index / run];
-        int tempIndex = index;
-        while (tempIndex > run) {
-            tempIndex -= run;
-        }
-        for (int i = 0; i < NUMPIXELS; i++) {
-            if (i == tempIndex) {
-                setPixelColor(i, color);
-            } else if (i == run - tempIndex) {
-                setPixelColor(i, color);
-            } else {
-                setPixelColor(i, dimColor(getPixelColor(i)));
+        int gap = NUMPIXELS / colorSize;
+        for (int j = 0; j < colorSize; j++) {
+            int litPixel = (index + (j * gap)) % (NUMPIXELS - 1);
+            for (int i = 0; i < NUMPIXELS; i++) {
+                if (i == litPixel) {
+                    setPixelColor(i, colors[j]);
+                } else if (i == totalSteps - litPixel) {
+                    setPixelColor(i, colors[j]);
+                } else {
+                    setPixelColor(i, dimColor(getPixelColor(i)));
+                }
             }
         }
         show();
